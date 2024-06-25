@@ -255,15 +255,15 @@ if __name__ == "__main__":
     my_password = "Epqmel0421!"
 
     # # case1 - 사용자 포인트 조회
-    # actions = [{
-    #    "action": login,
-    #     "args": [driver, my_username, my_password]
-    # }, {
-    #     "action": get_point,
-    #     "args": [driver]
-    # }]
+    actions = [{
+       "action": login,
+        "args": [driver, my_username, my_password]
+    }, {
+        "action": get_point,
+        "args": [driver]
+    }]
 
-    # # case2 - 사용자 부동산 조회 목록
+    # case2 - 사용자 부동산 조회 목록
     # actions = [{
     #     "action": login,
     #     "args": [driver, my_username, my_password]
@@ -275,16 +275,16 @@ if __name__ == "__main__":
     search_address = "서울특별시 종로구 숭인동 72-81"
 
     # # case3 - 신규 부동산 조회
-    actions = [
-        {
-            "action": login,
-            "args": [driver, my_username, my_password]
-        },
-        {
-            "action": get_land_detail,
-            "args": [driver, search_address]
-        }
-    ]
+    # actions = [
+    #     {
+    #         "action": login,
+    #         "args": [driver, my_username, my_password]
+    #     },
+    #     {
+    #         "action": get_land_detail,
+    #         "args": [driver, search_address]
+    #     }
+    # ]
 
     for action in actions:
         if isinstance(action, dict):
