@@ -95,6 +95,21 @@ def apply_buildingInfo(driver,address):
 
     result_field=wait.until(EC.presence_of_element_located((By.XPATH,"//*[@id=\"container\"]/div[2]/div/div[2]/div[1]/div[3]")))
 
+    if(result_field):
+      building_info=wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="container"]/div[2]/div/div[2]/div[1]/div[3]/ul/li[2]/a')))
+      building_info.click()
+
+      building_element=wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="container"]/div[2]/div/div[2]/div[1]/div[3]/div/div[2]/table/tbody/div/div/div[1]/div[2]/div[3]/div[2]/div/div/div/div[1]')))
+      building_element.click()
+
+      add=wait.until(EC.presence_of_element_located((By.CLASS_NAME,'btnAddCart')))
+      add.click()
+      sleep(2)
+
+      get_building=wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="container"]/div[2]/div/div[2]/div[2]/button')))
+      get_building.click()
+
+
 
     try:
       print('pass')   
