@@ -113,8 +113,7 @@ def get_land_list(driver):
                     "검색일자": cells[3].text,
                     "재검색": cells[4].text,
                 }
-                land_list.append(land_info)
-        
+                land_list.append(land_info)      
         return land_list
     
     except Exception as e:
