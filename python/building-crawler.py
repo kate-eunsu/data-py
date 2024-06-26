@@ -9,7 +9,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.alert import Alert
 from selenium.common.exceptions import UnexpectedAlertPresentException, NoAlertPresentException,TimeoutException
 from time import sleep
-
+import pyautogui
+import asyncio
 
 
 def login(driver, username, password):
@@ -80,137 +81,189 @@ def search_building(driver,address,dong):
 
     sleep(1)
 
-    results = driver.find_elements(By.CSS_SELECTOR, '.result-item')
+    results = driver.find_elements(By.CLASS_NAME, 'result-item')
+    print('result',len(results))
     for result in results:
-      address_text_elements = result.find_elements(By.CSS_SELECTOR, '.address-text .text')
+      address_text_elements = result.find_elements(By.XPATH, './/span[@class="text"]')
+      print('address_text_elements',address_text_elements)
       for address_text_element in address_text_elements:
+        print(address_text_element.text)
         if address in address_text_element.text:
           try:
             result.click()
+            done=True
+            sleep(1)
+            break
           except:
             break
-
-    next_list = WebDriverWait(driver, 10).until(
-      EC.presence_of_element_located((By.CLASS_NAME, "next-list"))
-    )
-    if(next_list):
-      next_results = driver.find_elements(By.CSS_SELECTOR, '.next-list_item')
-      print('next_results',len(next_results))
-      if(len(next_results)==1):
-        next_results[0].click()
-      else:
-        for result in next_results:
-          text_element = result.find_element(By.CSS_SELECTOR, '.text')
-          if dong in text_element.text:
-              result.click()
+        else:
+          continue
+      if(done):
+        break
 
 
-def get_report_by_type(driver,ho):
+    next_results = driver.find_elements(By.CLASS_NAME, 'next-list_item')
+
+    if(len(next_results)==1):
+      next_results[0].click()
+      print('여기는 갔어..?')
+      return
+
+    for result in next_results:
+      text_element = result.find_element(By.CSS_SELECTOR, '.text')
+      print('text',text_element.text)
+      if(len(text_element.text)<1):
+        return
+      if dong in text_element.text:
+        result.click()
+        return
 
 
-  print('여기')
+def select_report_type(driver,ho,report_type):
+  print('왜 안와')
+  sleep(1)
+  wait=WebDriverWait(driver,10)
+  folder_btns = driver.find_elements(By.CLASS_NAME,'folder-list_btn')
+  error=[]
 
+  for folder_btn in folder_btns:
+    text_element = folder_btn.find_element(By.CLASS_NAME,'text')
+    len = folder_btn.find_element(By.TAG_NAME,'em')
+  
+  for type in report_type:
+    for folder_btn in folder_btns:
+      text_element = folder_btn.find_element(By.CLASS_NAME,'text')
+      len = folder_btn.find_element(By.TAG_NAME,'em')
+      if(int(len.text)==0):
+        error.append('type은 가져올수 없는 건물입니다')
+        print(f'{type}은 가져올수 없는 건물입니다')
+        continue
 
+      if(type !='전유부' and type in text_element.text):
+        folder_btn.click()
+        id = check_data(type)
+        check = wait.until(EC.presence_of_element_located((By.ID,id)))
+        check.click()
+      elif(type in text_element.text):
+        folder_btn.click()
+        sleep(2)
 
+        wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="__layout"]/div/div[1]/div/div[1]/div[4]/div')))
+        table = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="__layout"]/div/div[1]/div/div[1]/div[4]/div/table')))
+        rows = table.find_elements(By.XPATH, './/tbody/tr')
 
-def apply_buildingInfo(driver,dong,ho):
-    wait = WebDriverWait(driver, 10)
-
-    if(dong or ho):
-      jeonyubu_tab = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#__layout > div > div:nth-child(1) > div > div.container > div.pdT-medium.base-side > div.mgT-medium > div.folder-list.js-btnRdo > button.folder-list_btn.color5.js-btn')))
-      jeonyubu_tab.click()
-
-      rows = driver.find_elements(By.CSS_SELECTOR, '.js-tblData tbody tr')
-
-      # 각 행을 순회하며 조건에 맞는지 확인
-      for row in rows:
-          ho_name = row.find_element(By.XPATH, './/td[4]').text
-          if ho in ho_name:
-              # 체크박스 클릭
-              checkbox = row.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
-              checkbox.click()
-              break
-
-
-
-    result_field=wait.until(EC.presence_of_element_located((By.XPATH,"//*[@id=\"container\"]/div[2]/div/div[2]/div[1]/div[3]")))
-
-    if(result_field):
-      driver.switch_to.window(driver.window_handles[0])
-      rows = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.ag-center-cols-container .ag-row')))
-      first_tab_condition_met = False
-
-      if(dong or ho):
-        jeonyubu_tab = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'ul.complaintSelTab li.st5')))
-        jeonyubu_tab.click()
-
-        driver.execute_script("document.querySelector('.ag-center-cols-viewport').scrollTop = document.querySelector('.ag-center-cols-viewport').scrollHeight")
-        
-        scroll_to_bottom(driver)
-        rows = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.ag-center-cols-container .ag-row')))
-
-
-        print(len(rows))
         for row in rows:
-            try:
-                if dong:
-                  dong_cell = row.find_element(By.CSS_SELECTOR, '[col-id="dongNm"]')
-                  if dong not in dong_cell.text:
-                      continue
-
-                ho_cell = row.find_element(By.CSS_SELECTOR, '[col-id="hoNm"]')
-                if ho in ho_cell.text:
-                    checkbox = row.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
-                    if not checkbox.is_selected():
-                        checkbox.click()
-                    break
-            except:
-                continue
+          ho_name = row.find_elements(By.TAG_NAME, 'td')[3].text
+          if ho in ho_name:
+            # 체크박스 클릭
+            print(ho, '/',ho_name)
+            checkbox_table = row.find_elements(By.TAG_NAME, 'td')[0]
+            checkbox=checkbox_table.find_element(By.TAG_NAME,'input')
+            driver.execute_script("arguments[0].scrollIntoView(true);", checkbox)
+            sleep(1)  # 스크롤이 완료될 시간을 줌
+            driver.execute_script("arguments[0].click();", checkbox)
+            break
 
 
-      add=wait.until(EC.presence_of_element_located((By.CLASS_NAME,'btnAddCart')))
-      add.click()
-      sleep(2)
-
-      get_building=wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="container"]/div[2]/div/div[2]/div[2]/button')))
-      get_building.click()
-
-      sleep(2)
-
-      reportSearchBtn = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="container"]/div[2]/div/div[5]/button[2]')))
-      reportSearchBtn.click()
-
-    try:
-      print('pass')   
-
-    except Exception as e:
-      print("부동산 상세 정보 조회 중 에러 발생:", e)
-      return None
+def check_data(type):
+  if('총괄' in type):
+    return 'filterRecap_0'
+  
+  if('일반' in type):
+    return 'filterGnrl_0'
+    
+  if('다가구' in type):
+    return 'filterGnrl_0'
+    
+  if('표제부' in type):
+    return 'filterTitle_0'
+    
 
 
+def apply_report(driver):
+  wait = WebDriverWait(driver, 10)
+  apply_btn=wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#__layout > div > div:nth-child(1) > div > div.bottom-fixbar > div > button')))
+  apply_btn.click()
+  
+  sleep(1)
 
-def get_report(driver):
-    sleep(5)
-    print('발급')
-    wait = WebDriverWait(driver, 10)
-    try:
-        reportBtn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#container > div.content > div > div.bbsWrap.mt40 > table > tbody > tr:nth-child(1) > td:nth-child(5) > a')))
-        reportBtn.click()
-    except UnexpectedAlertPresentException:
-        try:
-            alert = driver.switch_to.alert
-            alert.accept()
-            print("Unexpected alert accepted")
-        except NoAlertPresentException:
-            pass
-        # 재시도 로직
-        try:
-            reportBtn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#container > div.content > div > div.bbsWrap.mt40 > table > tbody > tr:nth-child(1) > td:nth-child(5) > a')))
-            reportBtn.click()
-        except TimeoutException:
-            print("Failed to click the report button after alert was accepted")
-    return "Report generation attempted"
+  next_btn=wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#__layout > div > div:nth-child(1) > div > div.bottom-layer-popup.type2.js-btmLayer.active > div.popup > div > button')))
+  next_btn.click()
 
+
+  table=wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#__layout > div > div:nth-child(1) > div > div > div.pdT-medium.base-side > div.tbl-scroll.js-tblScroll.mgT-medium > div > table > tbody')))
+  rows = table.find_elements(By.TAG_NAME,'tr')
+
+  sleep(1)
+  show_btn=wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#__layout > div > div:nth-child(1) > div > div > div.pdT-medium.base-side > button')))
+  show_btn.click()
+
+  return len(rows)
+
+
+
+def view_report(driver,report_type):
+  wait=WebDriverWait(driver,10)
+  sleep(2)
+  try:
+    table = wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="__layout"]/div/div[1]/div/div/div[2]/div[1]/div/table/tbody')))
+    table_rows = table.find_elements(By.TAG_NAME,'tr')
+  except:
+    table = wait.until(EC.presence_of_element_located((By.XPATH,'//*[@id="__layout"]/div/div[1]/div/div/div[2]/div[1]/div[2]/table/tbody')))
+    table_rows = table.find_elements(By.TAG_NAME,'tr')
+
+
+  for (i,type) in enumerate(report_type):
+
+    view_button = table_rows[i].find_element(By.TAG_NAME,'button')
+    view_button.click()
+    
+    print(i,type)
+    # tab 전환
+    sleep(2)  # 탭이 열릴 시간을 줌
+
+    for _ in range(5):  # 최대 5개의 랜덤 탭이 열릴 수 있음
+      if len(driver.window_handles) > 1:
+          driver.switch_to.window(driver.window_handles[-1])
+          sleep(3)
+          save_pdf(driver)  # PDF 저장 함수 호출 desired_filename.pdf
+          driver.close()
+
+    driver.switch_to.window(driver.window_handles[0])
+    close_extra_tabs(driver) 
+
+def save_pdf(driver):
+  try:
+    
+    # PDF 저장을 위한 단축키 사용
+    # pyautogui.hotkey('command', 'p')  # Cmd
+    #  + P를 눌러 인쇄 팝업을 엶     
+    pyautogui.keyDown('command')
+    pyautogui.press('p')
+    pyautogui.keyUp('command')
+    sleep(1)  # 인쇄 대화상자가 열릴 시간을 기다림
+    pyautogui.press('tab', presses=4, interval=0.5)         
+    pyautogui.press('down', presses=2, interval=0.5)  # PDF로 저장 옵션 선택
+    sleep(1)  # 저장 대화상자가 열릴 시간을 기다림
+    pyautogui.press('enter',presses=2,interval=0.5)
+    sleep(2)  # 파일이 저장될 시간을 기다림
+
+
+    pyautogui.press('tab', presses=5, interval=0.5)
+
+    pyautogui.press('enter',presses=2)
+    sleep(2)  # 파일이 저장될 시간을 기다림
+
+    print('완료')
+  except Exception as e:
+      print(f"An error occurred while saving the PDF: {e}")
+
+
+def close_extra_tabs(driver):
+    while len(driver.window_handles) > 1:
+        driver.switch_to.window(driver.window_handles[-1])
+        driver.close()
+    driver.switch_to.window(driver.window_handles[0])
 
 def handle_alerts(driver):
     while True:
@@ -250,21 +303,34 @@ if __name__ == "__main__":
 
     my_username = "es2006"
     my_password = "wngustkd1!"
-    address="서후센타시아"
+    address="지봉로 107"
     dong=""
-    ho="411"
+    ho=""
+    report_type=['일반']
 
     actions = [{
         "action": login,
         "args": [driver, my_username, my_password]
       },
       {"action":search_building,"args":[driver,address,dong]},
-      {"action":apply_buildingInfo,"args":[driver,dong,ho]},
-      {"action":get_report,"args":[driver]}]
+      {"action":select_report_type,"args":[driver,ho,report_type]},
+      {"action":apply_report,"args":[driver]},
+      {"action":view_report,"args":[driver,report_type]}
+    ]
+      #     {"action":apply_buildingInfo,"args":[driver,dong,ho]},
+      # {"action":get_report,"args":[driver]}
+
+    report_cnt = 0
 
     for action in actions:
-      if isinstance(action, dict):
+      if isinstance(action, dict):          
+        if action["action"] == apply_report:
+          report_cnt = action["action"](driver)
+          print(report_cnt)
+        else:
           result = action["action"](*action["args"])
+
+
       else:
           result = action(driver)
       print(result)
